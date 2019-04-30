@@ -1,0 +1,163 @@
+                public static final String DB_IP = "";
+
+                public static final String DB_PORT = "";
+
+                public static final String DB_NAME = "";
+
+                public static final String DB_USER_NAME = "";
+
+                public static final String DB_USER_PASSWORD = "";
+
+                public static final String DB_DRIVER = "org.postgresql.Driver";
+
+ 
+
+public class DBPool {
+
+                static DataSource datasource;
+
+                public static Connection getConnection() throws Exception{
+
+                                try {
+
+                                                if( datasource ==null){
+
+                                                                PoolProperties poolProperties = new PoolProperties();
+
+                                                                poolProperties.setUrl("jdbc:postgresql://" + Constants.DB_IP + ":" + Constants.DB_PORT + "/" + Constants.DB_NAME);
+
+                                                                poolProperties.setDriverClassName(Constants.DB_DRIVER);
+
+                                                                poolProperties.setUsername(Constants.DB_USER_NAME);
+
+                                                                poolProperties.setPassword(Constants.DB_USER_PASSWORD);
+
+                                                                poolProperties.setJmxEnabled(true);
+
+                                                                poolProperties.setTestWhileIdle(false);
+
+                                                                poolProperties.setTestOnBorrow(true);
+
+                                                                poolProperties.setValidationQuery("SELECT 1");
+
+                                                                poolProperties.setTestOnReturn(false);
+
+                                                                poolProperties.setValidationInterval(30000);
+
+                                                                poolProperties.setTimeBetweenEvictionRunsMillis(30000);
+
+                                                                poolProperties.setMaxActive(100);
+
+                                                                poolProperties.setInitialSize(1);
+
+                                                                poolProperties.setMaxWait(10000);
+
+                                                                poolProperties.setRemoveAbandonedTimeout(60);
+
+                                                                poolProperties.setMinEvictableIdleTimeMillis(30000);
+
+                                                                poolProperties.setMinIdle(10);
+
+                                                                poolProperties.setLogAbandoned(true);
+
+                                                                poolProperties.setRemoveAbandoned(true);
+
+                                                                poolProperties.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;"
+
+                                                                                                + "org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
+
+                                                                datasource = new DataSource();
+
+                                                                datasource.setPoolProperties(poolProperties);
+
+                                                }
+
+                                                Connection con = datasource.getConnection();
+
+                                                return con;
+
+                                }catch(Exception e){
+
+                                                //e.printStackTrace();
+
+                                                throw e;
+
+                                }
+
+                }
+
+}
+
+ 
+
+ 
+
+                @GET
+
+                @Path("/getSetAll")
+
+                @Produces(MediaType.APPLICATION_JSON)
+
+                public List<Session> getUseCase() {
+
+                                Connection connection = null;
+
+                                List<Session> evdata = new ArrayList<Session>();
+
+                                try {
+
+             // ===session created====================
+
+                                                String query1 = "select job_id,userid,time_stamp,'Started' as status FROM \"Transactional_Metadata\".job_config_tbl where project_id=168  and status not in ('Yet To Start','Need To Start','in progress','error')  order by job_id";
+
+                                                connection = DBPool.getConnection();
+
+                                                PreparedStatement preparedStatement = connection.prepareStatement(query1);
+
+                                                ResultSet resultset = preparedStatement.executeQuery();
+
+                                                Session data = null;
+
+                                                while ((resultset != null) && (resultset.next())) {
+
+                                                                data = new Session();
+
+                                                                data.setJobId(resultset.getInt("job_id"));
+
+                                                                data.setUserid(resultset.getInt("userid"));
+
+                                                                data.setsTime(resultset.getString("time_stamp"));
+
+                                                                data.setState(resultset.getString("status"));
+
+                                                                evdata.add(data);
+
+                                                }
+
+                                                connection.close();
+
+}catch (Exception e) {
+
+                                                System.out.println(e.getMessage());
+
+                                } finally {
+
+                                                if (connection != null) {
+
+                                                                try {
+
+                                                                                connection.close();
+
+                                                                } catch (SQLException e) {
+
+                                                                                e.printStackTrace();
+
+                                                                }
+
+                                                }
+
+                                }
+
+                                return evdata;
+
+                }
